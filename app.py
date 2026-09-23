@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask_wtf import CSRFProtect
 from utils.db import get_conn
 from utils.security import hash_password, verify_password
 from datetime import datetime, timedelta
@@ -6,17 +7,33 @@ from werkzeug.utils import secure_filename
 import sqlite3, os
 
 app = Flask(__name__)
-app.secret_key = "super-secret-key"
+
+# ---------------- SECRETS (env-var backed, no hardcoding) ----------------
+app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
+ADMIN_PASS = os.environ.get("ADMIN_PASS", "ADMIN0905")  # override this in production!
+
+# ---------------- CSRF ----------------
+csrf = CSRFProtect(app)
 
 # ---------------- CONFIG ----------------
 UPLOAD_FOLDER = "static/photos"
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5MB upload cap
+
+
+def allowed_file(filename):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    )
 
 
 # ---------------- HELPERS ----------------
 def row_to_dict(row):
     return dict(row) if row else None
+
 
 def rows_to_dicts(rows):
     return [dict(r) for r in rows]
@@ -104,7 +121,62 @@ def seed_students():
 @app.route("/")
 @app.route("/home")
 def home():
-    return render_template("home.html")
+    expire_elections()
+    conn = get_conn()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM elections WHERE is_active=1")
+    active_elections = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    for e in active_elections:
+        e["status"] = "Active"
+    return render_template("home.html", active_elections=active_elections)
+
+
+# ---------------- REGISTER ----------------
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        cid = request.form.get("college_id", "").strip()
+        pwd = request.form.get("password", "")
+        confirm = request.form.get("confirm", "")
+
+        if not cid or not pwd:
+            flash("All fields are required", "danger")
+            return redirect(url_for("register"))
+
+        if pwd != confirm:
+            flash("Passwords do not match", "danger")
+            return redirect(url_for("register"))
+
+        if len(pwd) < 6:
+            flash("Password must be at least 6 characters", "danger")
+            return redirect(url_for("register"))
+
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT 1 FROM students WHERE college_id=?", (cid,))
+        if cur.fetchone():
+            flash("College ID already registered", "danger")
+            conn.close()
+            return redirect(url_for("register"))
+
+        try:
+            cur.execute(
+                "INSERT INTO students (college_id, password_hash) VALUES (?,?)",
+                (cid, hash_password(pwd))
+            )
+            conn.commit()
+        except sqlite3.IntegrityError:
+            flash("College ID already registered", "danger")
+            conn.close()
+            return redirect(url_for("register"))
+
+        conn.close()
+        flash("Registration successful. Please log in.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("register.html")
 
 
 # ---------------- LOGIN ----------------
@@ -171,14 +243,21 @@ def vote():
 
         candidate_id = request.form.get("candidate")
         if not candidate_id:
+            conn.close()
             flash("Please select a candidate", "danger")
             return redirect(url_for("vote"))
 
-        cur.execute(
-            "INSERT INTO votes (election_id,student_id,candidate_id) VALUES (?,?,?)",
-            (election["id"], sid, candidate_id)
-        )
-        conn.commit()
+        try:
+            cur.execute(
+                "INSERT INTO votes (election_id,student_id,candidate_id) VALUES (?,?,?)",
+                (election["id"], sid, candidate_id)
+            )
+            conn.commit()
+        except sqlite3.IntegrityError:
+            # Race condition: another request already recorded this student's vote.
+            conn.close()
+            return redirect(url_for("thanks"))
+
         conn.close()
         return redirect(url_for("thanks"))
 
@@ -243,8 +322,6 @@ def results():
 
 
 # ---------------- ADMIN ----------------
-ADMIN_PASS = "ADMIN0905"
-
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
     if request.method == "POST" and "admin_login" in request.form:
@@ -264,29 +341,51 @@ def admin():
     cur = conn.cursor()
 
     if request.method == "POST" and "create_election" in request.form:
-        duration = int(request.form["duration"])
-        start = datetime.now()
-        end = start + timedelta(minutes=duration)
+        try:
+            duration = int(request.form["duration"])
+        except (ValueError, KeyError):
+            flash("Duration must be a number", "danger")
+            duration = None
 
-        cur.execute("UPDATE elections SET is_active=0")
-        cur.execute(
-            "INSERT INTO elections (name,is_active,start_time,end_time) VALUES (?,?,?,?)",
-            (request.form["election_name"], 1, start.isoformat(), end.isoformat())
-        )
-        conn.commit()
+        if duration and duration > 0:
+            start = datetime.now()
+            end = start + timedelta(minutes=duration)
+
+            cur.execute("UPDATE elections SET is_active=0")
+            cur.execute(
+                "INSERT INTO elections (name,is_active,start_time,end_time) VALUES (?,?,?,?)",
+                (request.form["election_name"], 1, start.isoformat(), end.isoformat())
+            )
+            conn.commit()
 
     if request.method == "POST" and "add_candidate" in request.form:
         cur.execute("SELECT id FROM elections WHERE is_active=1 LIMIT 1")
         e = cur.fetchone()
         if e:
-            photo = request.files["photo"]
-            filename = secure_filename(photo.filename)
-            photo.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            cur.execute(
-                "INSERT INTO candidates (election_id,name,photo) VALUES (?,?,?)",
-                (e["id"], request.form["candidate_name"], filename)
-            )
-            conn.commit()
+            photo = request.files.get("photo")
+            if not photo or photo.filename == "":
+                flash("Please choose a photo", "danger")
+            elif not allowed_file(photo.filename):
+                flash("Invalid image file type", "danger")
+            else:
+                filename = secure_filename(photo.filename)
+                # avoid collisions overwriting existing candidate photos
+                base, ext = os.path.splitext(filename)
+                candidate_name = request.form.get("candidate_name", "").strip()
+                if not candidate_name:
+                    flash("Candidate name is required", "danger")
+                else:
+                    unique_name = f"{base}_{int(datetime.now().timestamp())}{ext}"
+                    photo.save(os.path.join(app.config["UPLOAD_FOLDER"], unique_name))
+                    cur.execute(
+                        "INSERT INTO candidates (election_id,name,photo) VALUES (?,?,?)",
+                        (e["id"], candidate_name, unique_name)
+                    )
+                    conn.commit()
+
+    if request.method == "POST" and "end_election" in request.form:
+        cur.execute("UPDATE elections SET is_active=0 WHERE is_active=1")
+        conn.commit()
 
     cur.execute("SELECT * FROM elections WHERE is_active=1 LIMIT 1")
     election = row_to_dict(cur.fetchone())
@@ -379,37 +478,5 @@ def delete_student(college_id):
 if __name__ == "__main__":
     init_db()
     seed_students()
-    app.run(debug=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(debug=debug_mode)

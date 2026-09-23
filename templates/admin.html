@@ -12,7 +12,6 @@ body { background:#ede9fe; }
 .stat { font-size:32px; font-weight:700; }
 .timer { font-size:22px; color:#dc2626; font-weight:700; }
 
-/* SCROLLABLE STUDENT LIST */
 .scroll-box {
   max-height: 320px;
   overflow-y: auto;
@@ -39,20 +38,26 @@ body { background:#ede9fe; }
 
 {% if not logged_in %}
 <form method="POST" class="card p-4 col-md-4 mx-auto">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <h3 class="text-center">Admin Login</h3>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
   <input type="password" name="password" class="form-control my-3" placeholder="Password" required>
   <button name="admin_login" class="btn btn-dark w-100">Login</button>
 </form>
 
 {% else %}
 
-<!-- HEADER -->
 <div class="d-flex justify-content-between mb-3">
   <h2>Admin Dashboard</h2>
   <a href="/logout" class="btn btn-outline-dark">Logout</a>
 </div>
 
-<!-- STATUS -->
 <div class="card p-2 text-center mb-2">
 {% if election %}
   <span class="badge bg-success">🟢 Election Running</span>
@@ -61,7 +66,6 @@ body { background:#ede9fe; }
 {% endif %}
 </div>
 
-<!-- TIMER -->
 <div class="card p-3 text-center mb-3">
   <div>⏱ Time Remaining</div>
   {% if election %}
@@ -71,15 +75,14 @@ body { background:#ede9fe; }
   {% endif %}
 </div>
 
-<!-- END ELECTION -->
 <form method="POST" class="text-center mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="end_election">
   <button class="btn btn-danger" {% if not election %}disabled{% endif %}>
     End Election & Show Result
   </button>
 </form>
 
-<!-- STATS -->
 <div class="row mb-4">
   <div class="col-md-4">
     <div class="card p-3 text-center">
@@ -101,7 +104,6 @@ body { background:#ede9fe; }
   </div>
 </div>
 
-<!-- CURRENT LEADER -->
 {% if leader %}
 <div class="card p-3 mb-4 text-center border-success">
   <h5>🏆 Current Leader</h5>
@@ -112,16 +114,16 @@ body { background:#ede9fe; }
 </div>
 {% endif %}
 
-<!-- CREATE ELECTION + ADD PARTICIPANT -->
 <div class="row mb-4">
 
   <div class="col-md-6">
     <div class="card p-4 h-100">
       <h4>Create Election</h4>
       <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="create_election">
         <input name="election_name" class="form-control mb-2" placeholder="Election Name" required>
-        <input name="duration" type="number" class="form-control mb-2" placeholder="Duration (minutes)" required>
+        <input name="duration" type="number" min="1" class="form-control mb-2" placeholder="Duration (minutes)" required>
         <button class="btn btn-success w-100">Create Election</button>
       </form>
     </div>
@@ -131,6 +133,7 @@ body { background:#ede9fe; }
     <div class="card p-4 h-100">
       <h4>Add Participant</h4>
       <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="add_candidate">
 
         <input name="candidate_name"
@@ -141,6 +144,7 @@ body { background:#ede9fe; }
 
         <input type="file"
                name="photo"
+               accept="image/png, image/jpeg, image/gif, image/webp"
                class="form-control mb-2"
                {% if not election %}disabled{% endif %}
                required>
@@ -158,7 +162,6 @@ body { background:#ede9fe; }
 
 </div>
 
-<!-- MANAGE CANDIDATES -->
 <div class="card p-4 mb-4">
 <h4>Manage Candidates</h4>
 <table class="table align-middle">
@@ -180,6 +183,7 @@ body { background:#ede9fe; }
     <td><span class="badge bg-primary">{{ c.votes }}</span></td>
     <td>
       <form method="POST" action="{{ url_for('delete_candidate', cid=c.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-sm btn-danger">Delete</button>
       </form>
     </td>
@@ -193,7 +197,6 @@ body { background:#ede9fe; }
 </table>
 </div>
 
-<!-- REGISTERED STUDENTS -->
 <div class="card p-4">
 <h4>Registered Students</h4>
 <div class="scroll-box">
@@ -224,6 +227,7 @@ body { background:#ede9fe; }
 <form method="POST"
       action="{{ url_for('delete_student', college_id=s.college_id) }}"
       onsubmit="return confirm('Delete this student permanently?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button class="btn btn-sm btn-danger">
     Delete
   </button>
@@ -256,19 +260,3 @@ if (timerEl) {
 {% endif %}
 </body>
 </html>
-
-
-
-
-
-       
-
-
-
-
-
-
-
-
-
-

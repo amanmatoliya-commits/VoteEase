@@ -1,0 +1,256 @@
+warning: in the working copy of 'app.py', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/app.py b/app.py[m
+[1mindex 6a6c05d..498058a 100644[m
+[1m--- a/app.py[m
+[1m+++ b/app.py[m
+[36m@@ -1,4 +1,5 @@[m
+ from flask import Flask, render_template, request, redirect, url_for, session, flash[m
+[32m+[m[32mfrom flask_wtf import CSRFProtect[m
+ from utils.db import get_conn[m
+ from utils.security import hash_password, verify_password[m
+ from datetime import datetime, timedelta[m
+[36m@@ -6,18 +7,34 @@[m [mfrom werkzeug.utils import secure_filename[m
+ import sqlite3, os[m
+ [m
+ app = Flask(__name__)[m
+[31m-app.secret_key = "super-secret-key"[m
+[32m+[m
+[32m+[m[32m# ---------------- SECRETS (env-var backed, no hardcoding) ----------------[m
+[32m+[m[32mapp.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)[m
+[32m+[m[32mADMIN_PASS = os.environ.get("ADMIN_PASS", "ADMIN0905")  # override this in production![m
+[32m+[m
+[32m+[m[32m# ---------------- CSRF ----------------[m
+[32m+[m[32mcsrf = CSRFProtect(app)[m
+ [m
+ # ---------------- CONFIG ----------------[m
+ UPLOAD_FOLDER = "static/photos"[m
+[32m+[m[32mALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}[m
+ os.makedirs(UPLOAD_FOLDER, exist_ok=True)[m
+ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER[m
+[32m+[m[32mapp.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5MB upload cap[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef allowed_file(filename):[m
+[32m+[m[32m    return ([m
+[32m+[m[32m        "." in filename[m
+[32m+[m[32m        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS[m
+[32m+[m[32m    )[m
+ [m
+ [m
+ # ---------------- HELPERS ----------------[m
+ def row_to_dict(row):[m
+     return dict(row) if row else None[m
+ [m
+[32m+[m
+ def rows_to_dicts(rows):[m
+     return [dict(r) for r in rows][m
+ [m
+[36m@@ -104,7 +121,62 @@[m [mdef seed_students():[m
+ @app.route("/")[m
+ @app.route("/home")[m
+ def home():[m
+[31m-    return render_template("home.html")[m
+[32m+[m[32m    expire_elections()[m
+[32m+[m[32m    conn = get_conn()[m
+[32m+[m[32m    conn.row_factory = sqlite3.Row[m
+[32m+[m[32m    cur = conn.cursor()[m
+[32m+[m[32m    cur.execute("SELECT * FROM elections WHERE is_active=1")[m
+[32m+[m[32m    active_elections = [dict(r) for r in cur.fetchall()][m
+[32m+[m[32m    conn.close()[m
+[32m+[m[32m    for e in active_elections:[m
+[32m+[m[32m        e["status"] = "Active"[m
+[32m+[m[32m    return render_template("home.html", active_elections=active_elections)[m
+[32m+[m
+[32m+[m
+[32m+[m[32m# ---------------- REGISTER ----------------[m
+[32m+[m[32m@app.route("/register", methods=["GET", "POST"])[m
+[32m+[m[32mdef register():[m
+[32m+[m[32m    if request.method == "POST":[m
+[32m+[m[32m        cid = request.form.get("college_id", "").strip()[m
+[32m+[m[32m        pwd = request.form.get("password", "")[m
+[32m+[m[32m        confirm = request.form.get("confirm", "")[m
+[32m+[m
+[32m+[m[32m        if not cid or not pwd:[m
+[32m+[m[32m            flash("All fields are required", "danger")[m
+[32m+[m[32m            return redirect(url_for("register"))[m
+[32m+[m
+[32m+[m[32m        if pwd != confirm:[m
+[32m+[m[32m            flash("Passwords do not match", "danger")[m
+[32m+[m[32m            return redirect(url_for("register"))[m
+[32m+[m
+[32m+[m[32m        if len(pwd) < 6:[m
+[32m+[m[32m            flash("Password must be at least 6 characters", "danger")[m
+[32m+[m[32m            return redirect(url_for("register"))[m
+[32m+[m
+[32m+[m[32m        conn = get_conn()[m
+[32m+[m[32m        cur = conn.cursor()[m
+[32m+[m[32m        cur.execute("SELECT 1 FROM students WHERE college_id=?", (cid,))[m
+[32m+[m[32m        if cur.fetchone():[m
+[32m+[m[32m            flash("College ID already registered", "danger")[m
+[32m+[m[32m            conn.close()[m
+[32m+[m[32m            return redirect(url_for("register"))[m
+[32m+[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            cur.execute([m
+[32m+[m[32m                "INSERT INTO students (college_id, password_hash) VALUES (?,?)",[m
+[32m+[m[32m                (cid, hash_password(pwd))[m
+[32m+[m[32m            )[m
+[32m+[m[32m            conn.commit()[m
+[32m+[m[32m        except sqlite3.IntegrityError:[m
+[32m+[m[32m            flash("College ID already registered", "danger")[m
+[32m+[m[32m            conn.close()[m
+[32m+[m[32m            return redirect(url_for("register"))[m
+[32m+[m
+[32m+[m[32m        conn.close()[m
+[32m+[m[32m        flash("Registration successful. Please log in.", "success")[m
+[32m+[m[32m        return redirect(url_for("login"))[m
+[32m+[m
+[32m+[m[32m    return render_template("register.html")[m
+ [m
+ [m
+ # ---------------- LOGIN ----------------[m
+[36m@@ -171,14 +243,21 @@[m [mdef vote():[m
+ [m
+         candidate_id = request.form.get("candidate")[m
+         if not candidate_id:[m
+[32m+[m[32m            conn.close()[m
+             flash("Please select a candidate", "danger")[m
+             return redirect(url_for("vote"))[m
+ [m
+[31m-        cur.execute([m
+[31m-            "INSERT INTO votes (election_id,student_id,candidate_id) VALUES (?,?,?)",[m
+[31m-            (election["id"], sid, candidate_id)[m
+[31m-        )[m
+[31m-        conn.commit()[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            cur.execute([m
+[32m+[m[32m                "INSERT INTO votes (election_id,student_id,candidate_id) VALUES (?,?,?)",[m
+[32m+[m[32m                (election["id"], sid, candidate_id)[m
+[32m+[m[32m            )[m
+[32m+[m[32m            conn.commit()[m
+[32m+[m[32m        except sqlite3.IntegrityError:[m
+[32m+[m[32m            # Race condition: another request already recorded this student's vote.[m
+[32m+[m[32m            conn.close()[m
+[32m+[m[32m            return redirect(url_for("thanks"))[m
+[32m+[m
+         conn.close()[m
+         return redirect(url_for("thanks"))[m
+ [m
+[36m@@ -243,8 +322,6 @@[m [mdef results():[m
+ [m
+ [m
+ # ---------------- ADMIN ----------------[m
+[31m-ADMIN_PASS = "ADMIN0905"[m
+[31m-[m
+ @app.route("/admin", methods=["GET", "POST"])[m
+ def admin():[m
+     if request.method == "POST" and "admin_login" in request.form:[m
+[36m@@ -264,29 +341,51 @@[m [mdef admin():[m
+     cur = conn.cursor()[m
+ [m
+     if request.method == "POST" and "create_election" in request.form:[m
+[31m-        duration = int(request.form["duration"])[m
+[31m-        start = datetime.now()[m
+[31m-        end = start + timedelta(minutes=duration)[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            duration = int(request.form["duration"])[m
+[32m+[m[32m        except (ValueError, KeyError):[m
+[32m+[m[32m            flash("Duration must be a number", "danger")[m
+[32m+[m[32m            duration = None[m
+ [m
+[31m-        cur.execute("UPDATE elections SET is_active=0")[m
+[31m-        cur.execute([m
+[31m-            "INSERT INTO elections (name,is_active,start_time,end_time) VALUES (?,?,?,?)",[m
+[31m-            (request.form["election_name"], 1, start.isoformat(), end.isoformat())[m
+[31m-        )[m
+[31m-        conn.commit()[m
+[32m+[m[32m        if duration and duration > 0:[m
+[32m+[m[32m            start = datetime.now()[m
+[32m+[m[32m            end = start + timedelta(minutes=duration)[m
+[32m+[m
+[32m+[m[32m            cur.execute("UPDATE elections SET is_active=0")[m
+[32m+[m[32m            cur.execute([m
+[32m+[m[32m                "INSERT INTO elections (name,is_active,start_time,end_time) VALUES (?,?,?,?)",[m
+[32m+[m[32m                (request.form["election_name"], 1, start.isoformat(), end.isoformat())[m
+[32m+[m[32m            )[m
+[32m+[m[32m            conn.commit()[m
+ [m
+     if request.method == "POST" and "add_candidate" in request.form:[m
+         cur.execute("SELECT id FROM elections WHERE is_active=1 LIMIT 1")[m
+         e = cur.fetchone()[m
+         if e:[m
+[31m-            photo = request.files["photo"][m
+[31m-            filename = secure_filename(photo.filename)[m
+[31m-            photo.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))[m
+[31m-            cur.execute([m
+[31m-                "INSERT INTO candidates (election_id,name,photo) VALUES (?,?,?)",[m
+[31m-                (e["id"], request.form["candidate_name"], filename)[m
+[31m-            )[m
+[31m-            conn.commit()[m
+[32m+[m[32m            photo = request.files.get("photo")[m
+[32m+[m[32m            if not photo or photo.filename == "":[m
+[32m+[m[32m                flash("Please choose a photo", "danger")[m
+[32m+[m[32m            elif not allowed_file(photo.filename):[m
+[32m+[m[32m                flash("Invalid image file type", "danger")[m
+[32m+[m[32m            else:[m
+[32m+[m[32m                filename = secure_filename(photo.filename)[m
+[32m+[m[32m                # avoid collisions overwriting existing candidate photos[m
+[32m+[m[32m                base, ext = os.path.splitext(filename)[m
+[32m+[m[32m                candidate_name = request.form.get("candidate_name", "").strip()[m
+[32m+[m[32m                if not candidate_name:[m
+[32m+[m[32m                    flash("Candidate name is required", "danger")[m
+[32m+[m[32m                else:[m
+[32m+[m[32m                    unique_name = f"{base}_{int(datetime.now().timestamp())}{ext}"[m
+[32m+[m[32m                    photo.save(os.path.join(app.config["UPLOAD_FOLDER"], unique_name))[m
+[32m+[m[32m                    cur.execute([m
+[32m+[m[32m                        "INSERT INTO candidates (election_id,name,photo) VALUES (?,?,?)",[m
+[32m+[m[32m                        (e["id"], candidate_name, unique_name)[m
+[32m+[m[32m                    )[m
+[32m+[m[32m                    conn.commit()[m
+[32m+[m
+[32m+[m[32m    if request.method == "POST" and "end_election" in request.form:[m
+[32m+[m[32m        cur.execute("UPDATE elections SET is_active=0 WHERE is_active=1")[m
+[32m+[m[32m        conn.commit()[m
+ [m
+     cur.execute("SELECT * FROM elections WHERE is_active=1 LIMIT 1")[m
+     election = row_to_dict(cur.fetchone())[m
+[36m@@ -379,37 +478,5 @@[m [mdef delete_student(college_id):[m
+ if __name__ == "__main__":[m
+     init_db()[m
+     seed_students()[m
+[31m-    app.run(debug=True)[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[32m+[m[32m    debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"[m
+[32m+[m[32m    app.run(debug=debug_mode)[m

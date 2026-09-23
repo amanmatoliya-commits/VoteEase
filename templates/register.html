@@ -132,6 +132,8 @@ body {
 {% endwith %}
 
 <form method="POST" id="registerForm" class="form-container">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
     <div class="input-group-custom">
         <i class="fas fa-id-card"></i>
         <input type="text" name="college_id" placeholder="College ID" required>
@@ -162,5 +164,3 @@ body {
 
 </body>
 </html>
-
-

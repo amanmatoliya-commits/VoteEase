@@ -65,12 +65,10 @@ body {
 <body>
 <div class="container py-4">
 
-<!-- TITLE -->
 <div class="text-center mb-3">
   <h2 class="fw-bold">{{ election.name }}</h2>
 </div>
 
-<!-- TIMER -->
 {% if election.end_time %}
 <div class="card p-3 mb-4 text-center">
   <div class="mb-1 fw-semibold">⏱ Time Remaining</div>
@@ -89,8 +87,8 @@ body {
 
 {% else %}
 
-<!-- CANDIDATES -->
 <form method="POST" id="voteForm">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <div class="row justify-content-center">
 
 {% for c in candidates %}
@@ -125,7 +123,6 @@ body {
 
 </div>
 
-<!-- SELECTION SCRIPT -->
 <script>
 const radios = document.querySelectorAll("input[name='candidate']");
 const voteBtn = document.getElementById("voteBtn");
@@ -148,7 +145,6 @@ radios.forEach(radio => {
 });
 </script>
 
-<!-- TIMER SCRIPT -->
 {% if election.end_time %}
 <script>
 const endTime = new Date("{{ election.end_time }}").getTime();
@@ -181,8 +177,3 @@ setInterval(()=>{
 
 </body>
 </html>
-
-
-
-
-
