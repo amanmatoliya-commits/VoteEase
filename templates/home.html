@@ -1,22 +1,214 @@
-<!doctype html>
-<html>
-<head>
-    <title>Mini Voting System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+{% extends "base.html" %}
 
-<div class="container mt-5 text-center">
-    <h2>Mini Voting System</h2>
-    <p class="text-muted mt-3">
-        This system allows secure online voting for college elections.
-    </p>
-
-    <div class="mt-4">
-        <a href="/login" class="btn btn-primary me-2">Student Login</a>
-        <a href="/results" class="btn btn-outline-secondary">View Results</a>
+{% block content %}
+<!-- 1. Hero Section -->
+<section class="bg-primary bg-gradient text-white py-5 shadow-sm hero-section" style="background-color: #0a192f !important;">
+  <div class="container py-5 text-center">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="mb-3">
+          <i class="bi bi-check2-square display-1 text-light"></i>
+        </div>
+        <h1 class="display-4 fw-bold mb-3">Secure, Simple, One Vote at a Time</h1>
+        <p class="lead mb-4 opacity-75">
+          VoteEase lets students vote digitally in college elections with secure, guaranteed one-vote-per-student enforcement.
+        </p>
+        <div class="d-flex justify-content-center gap-3">
+          <a href="{{ url_for('student_login') }}" class="btn btn-light btn-lg px-4 fw-semibold">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Student Login
+          </a>
+          <a href="{{ url_for('admin_login') }}" class="btn btn-outline-light btn-lg px-4 fw-semibold">
+            <i class="bi bi-shield-lock me-1"></i> Admin Login
+          </a>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
+</section>
 
-</body>
-</html>
+<!-- 2. Active Elections Section -->
+<section class="py-5 bg-light">
+  <div class="container">
+    <div class="text-center mb-4">
+      <h2 class="fw-bold">Active Elections</h2>
+      <p class="text-muted">Current and upcoming elections open for voting</p>
+    </div>
+
+    {% if active_elections %}
+      <div class="row g-4 justify-content-center">
+        {% for election in active_elections %}
+          <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0">
+              <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h5 class="card-title fw-bold mb-0">{{ election.name }}</h5>
+                  {% if election.status == 'Active' %}
+                    <span class="badge bg-success">Active</span>
+                  {% elif election.status == 'Upcoming' %}
+                    <span class="badge bg-secondary">Upcoming</span>
+                  {% else %}
+                    <span class="badge bg-dark">{{ election.status }}</span>
+                  {% endif %}
+                </div>
+                <p class="text-muted small mb-4">Cast your vote securely using your student credentials.</p>
+                
+                <div class="mt-auto">
+                  {% if election.status == 'Active' %}
+                    <a href="{{ url_for('student_login') }}" class="btn btn-primary w-100 fw-semibold">
+                      Login to Vote
+                    </a>
+                  {% else %}
+                    <button class="btn btn-secondary w-100 disabled" disabled>Voting Unavailable</button>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-4">
+        <p class="text-muted fs-5 mb-0">No active elections right now. Check back soon.</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- 3. How It Works Section -->
+<section class="py-5">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="fw-bold">How It Works</h2>
+      <p class="text-muted">Three simple steps to make your voice heard</p>
+    </div>
+    
+    <div class="row g-4 text-center">
+      <div class="col-md-4">
+        <div class="p-4 rounded-3 bg-white h-100 border">
+          <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 fs-3" style="width: 60px; height: 60px;">
+            <i class="bi bi-person-badge"></i>
+          </div>
+          <h4 class="fw-bold mb-2">1. Login</h4>
+          <p class="text-muted mb-0">Sign in securely using your College ID and password.</p>
+        </div>
+      </div>
+      
+      <div class="col-md-4">
+        <div class="p-4 rounded-3 bg-white h-100 border">
+          <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 fs-3" style="width: 60px; height: 60px;">
+            <i class="bi bi-vote-fill"></i>
+          </div>
+          <h4 class="fw-bold mb-2">2. Vote</h4>
+          <p class="text-muted mb-0">View active elections and cast your vote once per election.</p>
+        </div>
+      </div>
+      
+      <div class="col-md-4">
+        <div class="p-4 rounded-3 bg-white h-100 border">
+          <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 fs-3" style="width: 60px; height: 60px;">
+            <i class="bi bi-bar-chart-line"></i>
+          </div>
+          <h4 class="fw-bold mb-2">3. Results</h4>
+          <p class="text-muted mb-0">See real-time election results after voting officially closes.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Feature Highlights Section -->
+<section class="py-5 bg-light">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="fw-bold">Platform Features</h2>
+      <p class="text-muted">Built for security, accuracy, and ease of access</p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm p-3">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="fs-2 text-primary feature-icon"><i class="bi bi-shield-lock"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">Password Hashing</h6>
+              <p class="text-muted small mb-0">Secure auth powered by session hashing algorithms.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm p-3">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="fs-2 text-primary feature-icon"><i class="bi bi-database-check"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">One Vote Per Student</h6>
+              <p class="text-muted small mb-0">Strictly enforced logic at database level.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm p-3">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="fs-2 text-primary feature-icon"><i class="bi bi-clock-history"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">Time-Controlled Elections</h6>
+              <p class="text-muted small mb-0">Automated status state management during cycles.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm p-3">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="fs-2 text-primary feature-icon"><i class="bi bi-pie-chart"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">Automatic Results</h6>
+              <p class="text-muted small mb-0">Instant generation and calculation of vote totals.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm p-3">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="fs-2 text-primary feature-icon"><i class="bi bi-arrow-left-right"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">Back-Navigation Disabled</h6>
+              <p class="text-muted small mb-0">Prevents duplicate submissions via browser back actions.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm p-3">
+          <div class="card-body d-flex align-items-center gap-3">
+            <div class="fs-2 text-primary feature-icon"><i class="bi bi-sliders"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">Admin Management</h6>
+              <p class="text-muted small mb-0">Easily manage candidates, voters, and elections.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. About / Project Note Section -->
+<section class="py-5">
+  <div class="container">
+    <div class="bg-light p-4 p-md-5 rounded-4 text-center border">
+      <h5 class="fw-bold text-dark mb-2">About VoteEase</h5>
+      <p class="text-muted mb-0 max-width-800 mx-auto">
+        VoteEase is a secure academic mini project demonstrating real-world digital voting logic using Flask and SQLite — built with authentication, backend validation, and one-vote enforcement.
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

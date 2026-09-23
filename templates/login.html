@@ -19,7 +19,6 @@ body {
     justify-content: center;
 }
 
-/* MAIN CARD */
 .main-container {
     background: linear-gradient(to bottom, #c4b5fd 0%, #ffffff 70%);
     width: 100%;
@@ -29,7 +28,6 @@ body {
     padding: 40px 60px 60px;
 }
 
-/* NAV */
 .navbar-custom {
     display: flex;
     justify-content: space-between;
@@ -55,7 +53,6 @@ body {
     color: #4f46e5;
 }
 
-/* CONTENT */
 .content {
     display: grid;
     grid-template-columns: 1.1fr 1fr;
@@ -63,7 +60,6 @@ body {
     gap: 40px;
 }
 
-/* LEFT */
 .hero-text h1 {
     font-size: 42px;
     font-weight: 700;
@@ -85,7 +81,6 @@ body {
     font-size: 14px;
 }
 
-/* FORM */
 .form-card {
     background: white;
     padding: 35px;
@@ -135,7 +130,6 @@ body {
     color: #4f46e5;
 }
 
-/* MOBILE */
 @media(max-width: 900px) {
     .content {
         grid-template-columns: 1fr;
@@ -149,7 +143,6 @@ body {
 
 <div class="main-container">
 
-    <!-- NAVBAR -->
     <div class="navbar-custom">
         <div class="logo">Mini Voting</div>
 
@@ -160,10 +153,8 @@ body {
         </div>
     </div>
 
-    <!-- CONTENT -->
     <div class="content">
 
-        <!-- LEFT -->
         <div class="hero-text">
             <h1>Login to Your Account</h1>
             <p>Use your college credentials to participate in the election securely.</p>
@@ -173,7 +164,6 @@ body {
             </button>
         </div>
 
-        <!-- RIGHT -->
         <div class="form-card">
 
             {% with messages = get_flashed_messages() %}
@@ -187,6 +177,7 @@ body {
             {% endwith %}
 
             <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <div class="input-group-custom">
                     <i class="fas fa-id-card"></i>
@@ -217,4 +208,3 @@ body {
 
 </body>
 </html>
-
