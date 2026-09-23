@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}VoteEase{% endblock %}</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color:#0a192f;">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="{{ url_for('home') }}">VoteEase</a>
+    <div class="d-flex gap-2">
+      <a class="nav-link text-light" href="{{ url_for('home') }}">Home</a>
+      <a class="nav-link text-light" href="{{ url_for('results') }}">Results</a>
+      <a class="nav-link text-light" href="{{ url_for('login') }}">Student Login</a>
+      <a class="nav-link text-light" href="{{ url_for('admin') }}">Admin</a>
+    </div>
+  </div>
+</nav>
+
+{% block content %}{% endblock %}
+
+<footer class="text-center text-muted py-4 small">
+  Mini Voting System &middot; VoteEase
+</footer>
+
+</body>
+</html>

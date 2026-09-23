@@ -14,10 +14,10 @@
           VoteEase lets students vote digitally in college elections with secure, guaranteed one-vote-per-student enforcement.
         </p>
         <div class="d-flex justify-content-center gap-3">
-          <a href="{{ url_for('student_login') }}" class="btn btn-light btn-lg px-4 fw-semibold">
+          <a href="{{ url_for('login') }}" class="btn btn-light btn-lg px-4 fw-semibold">
             <i class="bi bi-box-arrow-in-right me-1"></i> Student Login
           </a>
-          <a href="{{ url_for('admin_login') }}" class="btn btn-outline-light btn-lg px-4 fw-semibold">
+          <a href="{{ url_for('admin') }}" class="btn btn-outline-light btn-lg px-4 fw-semibold">
             <i class="bi bi-shield-lock me-1"></i> Admin Login
           </a>
         </div>
@@ -54,7 +54,7 @@
                 
                 <div class="mt-auto">
                   {% if election.status == 'Active' %}
-                    <a href="{{ url_for('student_login') }}" class="btn btn-primary w-100 fw-semibold">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary w-100 fw-semibold">
                       Login to Vote
                     </a>
                   {% else %}
