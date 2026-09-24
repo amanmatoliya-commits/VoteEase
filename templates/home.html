@@ -1,214 +1,944 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-{% block content %}
-<!-- 1. Hero Section -->
-<section class="bg-primary bg-gradient text-white py-5 shadow-sm hero-section" style="background-color: #0a192f !important;">
-  <div class="container py-5 text-center">
-    <div class="row justify-content-center">
-      <div class="col-lg-8">
-        <div class="mb-3">
-          <i class="bi bi-check2-square display-1 text-light"></i>
-        </div>
-        <h1 class="display-4 fw-bold mb-3">Secure, Simple, One Vote at a Time</h1>
-        <p class="lead mb-4 opacity-75">
-          VoteEase lets students vote digitally in college elections with secure, guaranteed one-vote-per-student enforcement.
-        </p>
-        <div class="d-flex justify-content-center gap-3">
-          <a href="{{ url_for('login') }}" class="btn btn-light btn-lg px-4 fw-semibold">
-            <i class="bi bi-box-arrow-in-right me-1"></i> Student Login
-          </a>
-          <a href="{{ url_for('admin') }}" class="btn btn-outline-light btn-lg px-4 fw-semibold">
-            <i class="bi bi-shield-lock me-1"></i> Admin Login
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+    <title>VoteEase | Mini Voting System</title>
+    <meta name="description" content="VoteEase is a simple digital voting system for college elections with student authentication, one-vote-per-election enforcement, and election results.">
+    <meta name="robots" content="index, follow">
 
-<!-- 2. Active Elections Section -->
-<section class="py-5 bg-light">
-  <div class="container">
-    <div class="text-center mb-4">
-      <h2 class="fw-bold">Active Elections</h2>
-      <p class="text-muted">Current and upcoming elections open for voting</p>
-    </div>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    {% if active_elections %}
-      <div class="row g-4 justify-content-center">
-        {% for election in active_elections %}
-          <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm border-0">
-              <div class="card-body d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                  <h5 class="card-title fw-bold mb-0">{{ election.name }}</h5>
-                  {% if election.status == 'Active' %}
-                    <span class="badge bg-success">Active</span>
-                  {% elif election.status == 'Upcoming' %}
-                    <span class="badge bg-secondary">Upcoming</span>
-                  {% else %}
-                    <span class="badge bg-dark">{{ election.status }}</span>
-                  {% endif %}
+    <style>
+        :root {
+            --purple: #4f46e5;
+            --purple-light: #6366f1;
+            --violet: #a855f7;
+            --heading: #1f2937;
+            --text: #4b5563;
+            --soft-border: #e5e7eb;
+            --lavender: #ede9fe;
+
+            /* Shared radius system */
+            --radius-lg: 24px;
+            --radius-md: 18px;
+            --radius-pill: 999px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #ede9fe 0%, #e0d4fc 100%);
+            color: var(--heading);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        .page-shell {
+            width: min(1180px, calc(100% - 32px));
+            margin: 28px auto;
+            background: linear-gradient(to bottom, #c4b5fd 0%, #ffffff 23%, #ffffff 100%);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+        }
+
+        .navbar-custom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 30px 48px 18px;
+        }
+
+        .logo {
+            color: var(--purple);
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 26px;
+        }
+
+        .nav-links a {
+            color: #4b5563;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover,
+        .nav-links a:focus-visible {
+            color: var(--purple);
+        }
+
+        .nav-active {
+            color: var(--purple) !important;
+            font-weight: 600 !important;
+        }
+
+        .hero {
+            padding: 72px 48px 76px;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            align-items: center;
+            gap: 55px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--purple);
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: var(--radius-pill);
+            padding: 7px 13px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+
+        .hero h1 {
+            margin: 0;
+            max-width: 620px;
+            color: var(--heading);
+            font-size: clamp(36px, 5vw, 54px);
+            line-height: 1.12;
+            font-weight: 700;
+            letter-spacing: -1.5px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(90deg, var(--purple-light), var(--violet));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .hero p {
+            max-width: 600px;
+            color: var(--text);
+            font-size: 16px;
+            line-height: 1.8;
+            margin: 20px 0 30px;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .primary-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(to right, #6366f1, #a855f7);
+            color: white;
+            padding: 12px 25px;
+            border-radius: var(--radius-pill);
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 10px 22px rgba(99, 102, 241, 0.22);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .primary-btn:hover,
+        .primary-btn:focus-visible {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 14px 26px rgba(99, 102, 241, 0.28);
+        }
+
+        .secondary-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--purple);
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #d8d4fe;
+            padding: 12px 25px;
+           border-radius: var(--radius-pill);
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .secondary-btn:hover,
+        .secondary-btn:focus-visible {
+            color: #3730a3;
+            border-color: #a5b4fc;
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        .hero-visual {
+            display: flex;
+            justify-content: center;
+        }
+
+        .hero-card {
+            width: min(100%, 360px);
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.95);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            box-shadow: 0 20px 45px rgba(79, 70, 229, 0.12);
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-icon {
+            width: 74px;
+            height: 74px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            font-size: 30px;
+            margin-bottom: 22px;
+            box-shadow: 0 12px 25px rgba(99, 102, 241, 0.22);
+        }
+
+        .hero-card h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .hero-card p {
+            font-size: 13px;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .mini-stat {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 0;
+            border-top: 1px solid #ececf3;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .mini-stat i {
+            width: 30px;
+            color: var(--purple);
+            text-align: center;
+        }
+
+        .section {
+            padding: 68px 48px;
+        }
+
+        .section-soft {
+            background: #fafaff;
+            border-top: 1px solid #f0eff8;
+            border-bottom: 1px solid #f0eff8;
+        }
+
+        .section-heading {
+            text-align: center;
+            margin-bottom: 38px;
+        }
+
+        .section-heading h2 {
+            margin-bottom: 8px;
+            color: var(--heading);
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .section-heading p {
+            max-width: 650px;
+            margin: 0 auto;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .election-card,
+        .step-card,
+        .feature-card {
+            height: 100%;
+            background: white;
+            border: 1px solid var(--soft-border);
+            border-radius: var(--radius-md);
+            box-shadow: 0 12px 30px rgba(31, 41, 55, 0.055);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .election-card:hover,
+        .step-card:hover,
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 35px rgba(31, 41, 55, 0.09);
+        }
+
+        .election-card {
+            padding: 24px;
+        }
+
+        .election-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .election-card h3 {
+            font-size: 17px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
+            border-radius: var(--radius-pill);
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            color: #166534;
+            background: #dcfce7;
+        }
+
+        .status-upcoming {
+            color: #475569;
+            background: #e2e8f0;
+        }
+
+        .status-ended {
+            color: white;
+            background: #334155;
+        }
+
+        .election-card p {
+            color: #6b7280;
+            font-size: 12px;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .full-btn {
+            width: 100%;
+        }
+
+        .empty-state {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 18px 22px;
+            text-align: center;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--radius-md);
+        }
+
+        .empty-state-icon {
+            width: 46px;
+            height: 46px;
+            margin: 0 auto 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            color: var(--purple);
+            background: #eef2ff;
+            font-size: 18px;
+        }
+
+        .empty-state p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .step-card {
+            padding: 28px 22px;
+            text-align: center;
+        }
+
+        .step-icon {
+            width: 62px;
+            height: 62px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 17px;
+            border-radius: var(--radius-md);
+            color: var(--purple);
+            background: #eef2ff;
+            font-size: 24px;
+        }
+
+        .step-card h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .step-card p {
+            color: #6b7280;
+            font-size: 12px;
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        .feature-card {
+            padding: 20px;
+        }
+
+        .feature-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            height: 100%;
+            text-align: center;
+        }
+
+        .feature-icon {
+            flex: 0 0 54px;
+            width: 54px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            color: var(--purple);
+            background: #eef2ff;
+            font-size: 21px;
+        }
+
+        .feature-copy {
+            width: 100%;
+        }
+
+        .feature-card h3 {
+            font-size: 14px;
+            font-weight: 700;
+            margin: 1px 0 5px;
+        }
+
+        .feature-card p {
+            color: #6b7280;
+            font-size: 12px;
+            line-height: 1.65;
+            max-width: 250px;
+            margin: 0 auto;
+        }
+
+        .about-card {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 34px 38px;
+            text-align: center;
+            background: linear-gradient(135deg, #fafaff, #ffffff);
+            border: 1px solid #e4e1f5;
+            border-radius: var(--radius-md);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+        }
+
+        .about-card h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .about-card p {
+            max-width: 760px;
+            margin: 0 auto;
+            color: #6b7280;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .footer {
+            padding: 24px 48px 30px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        :focus-visible {
+            outline: 3px solid rgba(99, 102, 241, 0.35);
+            outline-offset: 3px;
+        }
+
+        @media (max-width: 900px) {
+            .page-shell {
+                width: min(100% - 20px, 760px);
+                margin: 10px auto;
+                border-radius: var(--radius-md);
+            }
+
+            .navbar-custom {
+                padding: 24px 28px 10px;
+            }
+
+            .hero,
+            .section {
+                padding-left: 28px;
+                padding-right: 28px;
+            }
+
+            .hero-grid {
+                grid-template-columns: 1fr;
+                gap: 35px;
+            }
+
+            .hero-copy {
+                text-align: center;
+            }
+
+            .hero h1,
+            .hero p {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .hero-actions {
+                justify-content: center;
+            }
+
+            .hero-visual {
+                order: -1;
+            }
+
+            .hero-card {
+                max-width: 430px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .navbar-custom {
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .nav-links {
+                gap: 12px;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+
+            .nav-links a {
+                font-size: 12px;
+            }
+
+            .hero {
+                padding-top: 48px;
+                padding-bottom: 55px;
+            }
+
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero p {
+                font-size: 14px;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+            }
+
+            .primary-btn,
+            .secondary-btn {
+                width: 100%;
+            }
+
+            .section {
+                padding-top: 50px;
+                padding-bottom: 50px;
+            }
+
+            .section-heading h2 {
+                font-size: 24px;
+            }
+
+            .about-card {
+                padding: 27px 20px;
+            }
+
+            .footer {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="page-shell">
+
+    <!-- NAVIGATION -->
+    <nav class="navbar-custom" aria-label="Main navigation">
+        <a class="logo" href="{{ url_for('home') }}" aria-label="VoteEase home">
+    VoteEase
+</a>
+
+        <div class="nav-links">
+    <a class="nav-active"
+       href="{{ url_for('home') }}"
+       aria-current="page">
+        Home
+    </a>
+
+    <a href="{{ url_for('results') }}">Results</a>
+
+    <a href="{{ url_for('login') }}">Student Login</a>
+
+    <a href="{{ url_for('admin') }}">Admin Login</a>
+</div>
+    </nav>
+
+
+    <!-- HERO -->
+    <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-grid">
+
+            <div class="hero-copy">
+                <div class="eyebrow">
+                    <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                    College Digital Voting
                 </div>
-                <p class="text-muted small mb-4">Cast your vote securely using your student credentials.</p>
-                
-                <div class="mt-auto">
-                  {% if election.status == 'Active' %}
-                    <a href="{{ url_for('login') }}" class="btn btn-primary w-100 fw-semibold">
-                      Login to Vote
+
+                <h1 id="hero-title">
+                    Secure, Simple,
+                    <span>One Vote at a Time.</span>
+                </h1>
+
+                <p>
+                    VoteEase makes college elections simple and accessible.
+                    Sign in with your college credentials, cast your vote,
+                    and follow election results with a clear and reliable
+                    voting experience.
+                </p>
+
+                <div class="hero-actions">
+                    <a href="{{ url_for('login') }}" class="primary-btn">
+                        <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+                        Student Login
                     </a>
-                  {% else %}
-                    <button class="btn btn-secondary w-100 disabled" disabled>Voting Unavailable</button>
-                  {% endif %}
+
+                    
                 </div>
-              </div>
             </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="text-center py-4">
-        <p class="text-muted fs-5 mb-0">No active elections right now. Check back soon.</p>
-      </div>
-    {% endif %}
-  </div>
-</section>
 
-<!-- 3. How It Works Section -->
-<section class="py-5">
-  <div class="container">
-    <div class="text-center mb-5">
-      <h2 class="fw-bold">How It Works</h2>
-      <p class="text-muted">Three simple steps to make your voice heard</p>
-    </div>
-    
-    <div class="row g-4 text-center">
-      <div class="col-md-4">
-        <div class="p-4 rounded-3 bg-white h-100 border">
-          <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 fs-3" style="width: 60px; height: 60px;">
-            <i class="bi bi-person-badge"></i>
-          </div>
-          <h4 class="fw-bold mb-2">1. Login</h4>
-          <p class="text-muted mb-0">Sign in securely using your College ID and password.</p>
-        </div>
-      </div>
-      
-      <div class="col-md-4">
-        <div class="p-4 rounded-3 bg-white h-100 border">
-          <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 fs-3" style="width: 60px; height: 60px;">
-            <i class="bi bi-vote-fill"></i>
-          </div>
-          <h4 class="fw-bold mb-2">2. Vote</h4>
-          <p class="text-muted mb-0">View active elections and cast your vote once per election.</p>
-        </div>
-      </div>
-      
-      <div class="col-md-4">
-        <div class="p-4 rounded-3 bg-white h-100 border">
-          <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 fs-3" style="width: 60px; height: 60px;">
-            <i class="bi bi-bar-chart-line"></i>
-          </div>
-          <h4 class="fw-bold mb-2">3. Results</h4>
-          <p class="text-muted mb-0">See real-time election results after voting officially closes.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+            <div class="hero-visual">
+                <div class="hero-card">
+                    <div class="hero-icon">
+                        <i class="fa-solid fa-check-to-slot" aria-hidden="true"></i>
+                    </div>
 
-<!-- 4. Feature Highlights Section -->
-<section class="py-5 bg-light">
-  <div class="container">
-    <div class="text-center mb-5">
-      <h2 class="fw-bold">Platform Features</h2>
-      <p class="text-muted">Built for security, accuracy, and ease of access</p>
-    </div>
+                    <h2>Simple digital elections</h2>
 
-    <div class="row g-4">
-      <div class="col-md-6 col-lg-4">
-        <div class="card h-100 border-0 shadow-sm p-3">
-          <div class="card-body d-flex align-items-center gap-3">
-            <div class="fs-2 text-primary feature-icon"><i class="bi bi-shield-lock"></i></div>
-            <div>
-              <h6 class="fw-bold mb-1">Password Hashing</h6>
-              <p class="text-muted small mb-0">Secure auth powered by session hashing algorithms.</p>
+                    <p>
+                        A focused college voting workflow built around
+                        authentication, election timing, candidate selection,
+                        and result calculation.
+                    </p>
+
+                    <div class="mini-stat">
+                        <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+                        <span>Student authentication</span>
+                    </div>
+
+                    <div class="mini-stat">
+                        <i class="fa-solid fa-check-double" aria-hidden="true"></i>
+                        <span>One vote per election</span>
+                    </div>
+
+                    <div class="mini-stat">
+                        <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+                        <span>Election results</span>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div class="col-md-6 col-lg-4">
-        <div class="card h-100 border-0 shadow-sm p-3">
-          <div class="card-body d-flex align-items-center gap-3">
-            <div class="fs-2 text-primary feature-icon"><i class="bi bi-database-check"></i></div>
-            <div>
-              <h6 class="fw-bold mb-1">One Vote Per Student</h6>
-              <p class="text-muted small mb-0">Strictly enforced logic at database level.</p>
+        </div>
+    </section>
+
+
+    <!-- ACTIVE ELECTIONS -->
+    <section class="section section-soft" aria-labelledby="elections-title">
+        <div class="section-heading">
+            <h2 id="elections-title">Active Elections</h2>
+            <p>Current and upcoming elections available through VoteEase.</p>
+        </div>
+
+        {% if active_elections %}
+            <div class="row g-4">
+
+                {% for election in active_elections %}
+                    <div class="col-md-6 col-lg-4">
+                        <article class="election-card">
+
+                            <div class="election-top">
+                                <h3>{{ election.name }}</h3>
+
+                                {% if election.status == 'Active' %}
+                                    <span class="status status-active">Active</span>
+                                {% elif election.status == 'Upcoming' %}
+                                    <span class="status status-upcoming">Upcoming</span>
+                                {% else %}
+                                    <span class="status status-ended">{{ election.status }}</span>
+                                {% endif %}
+                            </div>
+
+                            <p>
+                                Cast your vote securely using your student
+                                credentials.
+                            </p>
+
+                            {% if election.status == 'Active' %}
+                                <a href="{{ url_for('login') }}"
+                                   class="primary-btn full-btn">
+                                    <i class="fa-solid fa-check-to-slot" aria-hidden="true"></i>
+                                    Login to Vote
+                                </a>
+                            {% else %}
+                                <button class="secondary-btn full-btn"
+                                        type="button"
+                                        disabled>
+                                    Voting Unavailable
+                                </button>
+                            {% endif %}
+
+                        </article>
+                    </div>
+                {% endfor %}
+
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4">
-        <div class="card h-100 border-0 shadow-sm p-3">
-          <div class="card-body d-flex align-items-center gap-3">
-            <div class="fs-2 text-primary feature-icon"><i class="bi bi-clock-history"></i></div>
-            <div>
-              <h6 class="fw-bold mb-1">Time-Controlled Elections</h6>
-              <p class="text-muted small mb-0">Automated status state management during cycles.</p>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i>
+                </div>
+                <p>No active elections right now. Check back soon.</p>
             </div>
-          </div>
-        </div>
-      </div>
+        {% endif %}
+    </section>
 
-      <div class="col-md-6 col-lg-4">
-        <div class="card h-100 border-0 shadow-sm p-3">
-          <div class="card-body d-flex align-items-center gap-3">
-            <div class="fs-2 text-primary feature-icon"><i class="bi bi-pie-chart"></i></div>
-            <div>
-              <h6 class="fw-bold mb-1">Automatic Results</h6>
-              <p class="text-muted small mb-0">Instant generation and calculation of vote totals.</p>
+
+    <!-- HOW IT WORKS -->
+    <section class="section" aria-labelledby="how-title">
+        <div class="section-heading">
+            <h2 id="how-title">How It Works</h2>
+            <p>Three simple steps to participate in a college election.</p>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-md-4">
+                <article class="step-card">
+                    <div class="step-icon">
+                        <i class="fa-solid fa-id-card" aria-hidden="true"></i>
+                    </div>
+                    <h3>1. Login</h3>
+                    <p>
+                        Sign in securely using your College ID and password.
+                    </p>
+                </article>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div class="col-md-6 col-lg-4">
-        <div class="card h-100 border-0 shadow-sm p-3">
-          <div class="card-body d-flex align-items-center gap-3">
-            <div class="fs-2 text-primary feature-icon"><i class="bi bi-arrow-left-right"></i></div>
-            <div>
-              <h6 class="fw-bold mb-1">Back-Navigation Disabled</h6>
-              <p class="text-muted small mb-0">Prevents duplicate submissions via browser back actions.</p>
+            <div class="col-md-4">
+                <article class="step-card">
+                    <div class="step-icon">
+                        <i class="fa-solid fa-check-to-slot" aria-hidden="true"></i>
+                    </div>
+                    <h3>2. Vote</h3>
+                    <p>
+                        View the active election, select a candidate,
+                        and cast your vote once.
+                    </p>
+                </article>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div class="col-md-6 col-lg-4">
-        <div class="card h-100 border-0 shadow-sm p-3">
-          <div class="card-body d-flex align-items-center gap-3">
-            <div class="fs-2 text-primary feature-icon"><i class="bi bi-sliders"></i></div>
-            <div>
-              <h6 class="fw-bold mb-1">Admin Management</h6>
-              <p class="text-muted small mb-0">Easily manage candidates, voters, and elections.</p>
+            <div class="col-md-4">
+                <article class="step-card">
+                    <div class="step-icon">
+                        <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+                    </div>
+                    <h3>3. Results</h3>
+                    <p>
+                        View election results after voting officially closes.
+                    </p>
+                </article>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- 5. About / Project Note Section -->
-<section class="py-5">
-  <div class="container">
-    <div class="bg-light p-4 p-md-5 rounded-4 text-center border">
-      <h5 class="fw-bold text-dark mb-2">About VoteEase</h5>
-      <p class="text-muted mb-0 max-width-800 mx-auto">
-        VoteEase is a secure academic mini project demonstrating real-world digital voting logic using Flask and SQLite — built with authentication, backend validation, and one-vote enforcement.
-      </p>
-    </div>
-  </div>
-</section>
-{% endblock %}
+        </div>
+    </section>
+
+
+    <!-- FEATURES -->
+    <section class="section section-soft" aria-labelledby="features-title">
+        <div class="section-heading">
+            <h2 id="features-title">Platform Features</h2>
+            <p>Core functionality behind the VoteEase experience.</p>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-md-6 col-lg-4 d-flex">
+                <article class="feature-card w-100">
+                    <div class="feature-inner">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                        </div>
+                        <div class="feature-copy">
+                            <h3>Password Hashing</h3>
+                            <p>
+                                Student passwords are stored using the
+                                application's password-hashing utility.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="col-md-6 col-lg-4 d-flex">
+                <article class="feature-card w-100">
+                    <div class="feature-inner">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-database" aria-hidden="true"></i>
+                        </div>
+                        <div class="feature-copy">
+                            <h3>One Vote Per Student</h3>
+                            <p>
+                                The database enforces a unique student and
+                                election vote record.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="col-md-6 col-lg-4 d-flex">
+                <article class="feature-card w-100">
+                    <div class="feature-inner">
+                        <div class="feature-icon">
+                            <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                        </div>
+                        <div class="feature-copy">
+                            <h3>Time-Controlled Elections</h3>
+                            <p>
+                                Elections are available according to their
+                                configured start and end times.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="col-md-6 col-lg-4 d-flex">
+                <article class="feature-card w-100">
+                    <div class="feature-inner">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+                        </div>
+                        <div class="feature-copy">
+                            <h3>Automatic Results</h3>
+                            <p>
+                                Vote totals are calculated from recorded votes
+                                after an election ends.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="col-md-6 col-lg-4 d-flex">
+                <article class="feature-card w-100">
+                    <div class="feature-inner">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-ban" aria-hidden="true"></i>
+                        </div>
+                        <div class="feature-copy">
+                            <h3>No-Cache Voting Pages</h3>
+                            <p>
+                                Voting responses use no-store cache headers
+                                to reduce stale-page behavior.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="col-md-6 col-lg-4 d-flex">
+                <article class="feature-card w-100">
+                    <div class="feature-inner">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                        </div>
+                        <div class="feature-copy">
+                            <h3>Admin Management</h3>
+                            <p>
+                                Manage elections, candidates, and student
+                                records through the admin interface.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- ABOUT -->
+    <section class="section" aria-labelledby="about-title">
+        <div class="about-card">
+            <h2 id="about-title">About VoteEase</h2>
+            <p>
+                VoteEase is an academic mini project demonstrating digital
+                voting logic using Flask and SQLite, with authentication,
+                backend validation, election management, and one-vote
+                enforcement.
+            </p>
+        </div>
+    </section>
+
+
+    <!-- FOOTER -->
+    <footer class="footer">
+    VoteEase · Mini Voting System
+</footer>
+
+</div>
+
+</body>
+</html>
