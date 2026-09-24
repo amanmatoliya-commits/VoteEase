@@ -498,6 +498,12 @@ def sitemap_xml():
 
 
 
+@app.route("/googlec246928b39a849e4.html")
+def google_verification():
+    return "google-site-verification: googlec246928b39a849e4.html"
+
+
+
 
 
 # ---------------- RUN ----------------
