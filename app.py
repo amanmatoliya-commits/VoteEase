@@ -474,6 +474,32 @@ def delete_student(college_id):
     return redirect(url_for("admin"))
 
 
+
+@app.route("/robots.txt")
+def robots_txt():
+    content = """User-agent: *
+Allow: /
+
+Sitemap: https://aman5.pythonanywhere.com/sitemap.xml
+"""
+    return app.response_class(content, mimetype="text/plain")
+
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    content = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://aman5.pythonanywhere.com/</loc>
+    </url>
+</urlset>
+"""
+    return app.response_class(content, mimetype="application/xml")
+
+
+
+
+
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     init_db()
