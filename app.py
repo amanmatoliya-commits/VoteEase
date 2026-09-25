@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 # ---------------- SECRETS (env-var backed, no hardcoding) ----------------
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
-ADMIN_PASS = os.environ.get("ADMIN_PASS", "ADMIN0905")  # override this in production!
+ADMIN_PASS = os.environ.get("ADMIN_PASS")  # override this in production!
 
 # ---------------- CSRF ----------------
 csrf = CSRFProtect(app)
