@@ -4,7 +4,11 @@ from utils.db import get_conn
 from utils.security import hash_password, verify_password
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
+from PIL import Image
 import sqlite3, os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -368,20 +372,27 @@ def admin():
             elif not allowed_file(photo.filename):
                 flash("Invalid image file type", "danger")
             else:
-                filename = secure_filename(photo.filename)
-                # avoid collisions overwriting existing candidate photos
-                base, ext = os.path.splitext(filename)
-                candidate_name = request.form.get("candidate_name", "").strip()
-                if not candidate_name:
-                    flash("Candidate name is required", "danger")
+                try:
+                    image = Image.open(photo)
+                    image.verify()
+                    photo.seek(0)
+                except Exception:
+                    flash("Invalid or corrupted image file", "danger")
                 else:
-                    unique_name = f"{base}_{int(datetime.now().timestamp())}{ext}"
-                    photo.save(os.path.join(app.config["UPLOAD_FOLDER"], unique_name))
-                    cur.execute(
-                        "INSERT INTO candidates (election_id,name,photo) VALUES (?,?,?)",
-                        (e["id"], candidate_name, unique_name)
-                    )
-                    conn.commit()
+                    filename = secure_filename(photo.filename)
+                    # avoid collisions overwriting existing candidate photos
+                    base, ext = os.path.splitext(filename)
+                    candidate_name = request.form.get("candidate_name", "").strip()
+                    if not candidate_name:
+                        flash("Candidate name is required", "danger")
+                    else:
+                        unique_name = f"{base}_{int(datetime.now().timestamp())}{ext}"
+                        photo.save(os.path.join(app.config["UPLOAD_FOLDER"], unique_name))
+                        cur.execute(
+                            "INSERT INTO candidates (election_id,name,photo) VALUES (?,?,?)",
+                            (e["id"], candidate_name, unique_name)
+                        )
+                        conn.commit()
 
     if request.method == "POST" and "end_election" in request.form:
         cur.execute("UPDATE elections SET is_active=0 WHERE is_active=1")
